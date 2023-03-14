@@ -8,6 +8,7 @@ enum type {
     boolean = (char) 4,
     string = (char) 3,
     float_point = (char) 2,
+    reference = (char) 5
 };
 
 typedef struct edge {
@@ -15,6 +16,13 @@ typedef struct edge {
     long int id;
     struct edge *next;
 } edge;
+
+typedef struct node node;
+
+typedef struct reference{
+    long int ref_id;
+    char *name;
+} ref;
 
 typedef struct attribute {
     char *name;
@@ -24,6 +32,7 @@ typedef struct attribute {
         int ifield;
         float ffield;
         _Bool bfield;
+        ref *ref_field;
     };
     struct attribute *next;
 } attribute;

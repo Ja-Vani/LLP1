@@ -106,7 +106,7 @@ node *page_to_node(const char page[PAGE_SIZE]) {
     c += sizeof(long int);
     char len = page[c];
     c++;
-    char *str = calloc(len+1, sizeof(*str));
+    char *str = calloc(len + 1, sizeof(*str));
     for (int i = 0; i < len; i++) {
         str[i] = page[i + c];
     }
@@ -116,7 +116,7 @@ node *page_to_node(const char page[PAGE_SIZE]) {
         attribute *att = calloc(1, sizeof(*att));
         len = page[c];
         c++;
-        str = calloc(len+1, sizeof(*str));
+        str = calloc(len + 1, sizeof(*str));
         for (int i = 0; i < len; i++) {
             str[i] = page[i + c];
         }
@@ -137,7 +137,7 @@ node *page_to_node(const char page[PAGE_SIZE]) {
             case string:
                 len = page[c];
                 c++;
-                str = calloc(len+1, sizeof(*str));
+                str = calloc(len + 1, sizeof(*str));
                 for (int i = 0; i < len; i++) {
                     str[i] = page[i + c];
                 }
@@ -160,7 +160,7 @@ node *page_to_node(const char page[PAGE_SIZE]) {
         edge *edge = calloc(1, sizeof(*edge));
         len = page[c];
         c++;
-        str = calloc(len+1, sizeof(*str));
+        str = calloc(len + 1, sizeof(*str));
         for (int i = 0; i < len; i++) {
             str[i] = page[i + c];
         }
@@ -380,14 +380,14 @@ graph *find_by_name_page(FILE *f, char *name) {
         fprintf(stderr, "Error find name page. Can't set point to start\n");
         return NULL;
     }
-    node *nodes = calloc(1, sizeof (node));
+    node *nodes = calloc(1, sizeof(node));
     int count = 0;
     char page[PAGE_SIZE];
     while (fread(page, sizeof(char), PAGE_SIZE, f)) {
         if (page[0] == start_node) {
             node *n = page_to_node(page);
             if (!strcmp(n->name, name)) {
-                nodes = realloc(nodes, (count + 2) * sizeof (node));
+                nodes = realloc(nodes, (count + 2) * sizeof(node));
                 nodes[count] = *n;
                 count++;
             }
@@ -400,46 +400,48 @@ graph *find_by_name_page(FILE *f, char *name) {
     return graph;
 }
 
-_Bool node_filters(node *n, struct filter *f){
+_Bool node_filters(node *n, struct filter *f, FILE *file) {
     _Bool b = true;
-    while(f != NULL && b){
+    if (f->att->type == reference) {
+        node *ref = get_node_page(file, f->att->ref_field->ref_id);
         attribute *att = n->att;
         b = false;
-        while(att!= NULL){
-            if(!strcmp(att->name, f->att->name)){
+        while (att != NULL) {
+            if (!strcmp(att->name, ref->att->name)) {
                 b = true;
                 break;
             }
             att = att->next;
         }
-        if(!b) break;
-        if(att->type!=f->att->type){
-            b=false;
-            break;
+        if (!b) {
+            free_node(ref);
+            return b;
         }
         switch (f->sel) {
             case equals:
                 switch (att->type) {
 
                     case integer:
-                        if(att->ifield!=f->att->ifield){
+                        if (att->ifield != ref->att->ifield) {
                             b = false;
                         }
                         break;
                     case boolean:
-                        if(att->bfield!=f->att->bfield){
+                        if (att->bfield != ref->att->bfield) {
                             b = false;
                         }
                         break;
                     case string:
-                        if(strcmp(att->sfield, f->att->sfield) != 0){
+                        if (strcmp(att->sfield, ref->att->sfield) != 0) {
                             b = false;
                         }
                         break;
                     case float_point:
-                        if(att->ffield!=f->att->ffield){
+                        if (att->ffield != ref->att->ffield) {
                             b = false;
                         }
+                        break;
+                    case reference:
                         break;
                 }
 
@@ -448,24 +450,26 @@ _Bool node_filters(node *n, struct filter *f){
                 switch (att->type) {
 
                     case integer:
-                        if(att->ifield<=f->att->ifield){
+                        if (att->ifield <= ref->att->ifield) {
                             b = false;
                         }
                         break;
                     case boolean:
-                        if(att->bfield<=f->att->bfield){
+                        if (att->bfield <= ref->att->bfield) {
                             b = false;
                         }
                         break;
                     case string:
-                        if(strcmp(att->sfield, f->att->sfield) >= 0){
+                        if (strcmp(att->sfield, ref->att->sfield) >= 0) {
                             b = false;
                         }
                         break;
                     case float_point:
-                        if(att->ffield<=f->att->ffield){
+                        if (att->ffield <= ref->att->ffield) {
                             b = false;
                         }
+                        break;
+                    case reference:
                         break;
                 }
                 break;
@@ -473,24 +477,26 @@ _Bool node_filters(node *n, struct filter *f){
                 switch (att->type) {
 
                     case integer:
-                        if(att->ifield<f->att->ifield){
+                        if (att->ifield < ref->att->ifield) {
                             b = false;
                         }
                         break;
                     case boolean:
-                        if(att->bfield<f->att->bfield){
+                        if (att->bfield < ref->att->bfield) {
                             b = false;
                         }
                         break;
                     case string:
-                        if(strcmp(att->sfield, f->att->sfield) > 0){
+                        if (strcmp(att->sfield, ref->att->sfield) > 0) {
                             b = false;
                         }
                         break;
                     case float_point:
-                        if(att->ffield<f->att->ffield){
+                        if (att->ffield < ref->att->ffield) {
                             b = false;
                         }
+                        break;
+                    case reference:
                         break;
                 }
                 break;
@@ -498,24 +504,26 @@ _Bool node_filters(node *n, struct filter *f){
                 switch (att->type) {
 
                     case integer:
-                        if(att->ifield>=f->att->ifield){
+                        if (att->ifield >= ref->att->ifield) {
                             b = false;
                         }
                         break;
                     case boolean:
-                        if(att->bfield>=f->att->bfield){
+                        if (att->bfield >= ref->att->bfield) {
                             b = false;
                         }
                         break;
                     case string:
-                        if(strcmp(att->sfield, f->att->sfield) <= 0){
+                        if (strcmp(att->sfield, ref->att->sfield) <= 0) {
                             b = false;
                         }
                         break;
                     case float_point:
-                        if(att->ffield>=f->att->ffield){
+                        if (att->ffield >= ref->att->ffield) {
                             b = false;
                         }
+                        break;
+                    case reference:
                         break;
                 }
                 break;
@@ -523,24 +531,26 @@ _Bool node_filters(node *n, struct filter *f){
                 switch (att->type) {
 
                     case integer:
-                        if(att->ifield>f->att->ifield){
+                        if (att->ifield > ref->att->ifield) {
                             b = false;
                         }
                         break;
                     case boolean:
-                        if(att->bfield>f->att->bfield){
+                        if (att->bfield > ref->att->bfield) {
                             b = false;
                         }
                         break;
                     case string:
-                        if(strcmp(att->sfield, f->att->sfield) < 0){
+                        if (strcmp(att->sfield, ref->att->sfield) < 0) {
                             b = false;
                         }
                         break;
                     case float_point:
-                        if(att->ffield>f->att->ffield){
+                        if (att->ffield > ref->att->ffield) {
                             b = false;
                         }
+                        break;
+                    case reference:
                         break;
                 }
                 break;
@@ -548,24 +558,209 @@ _Bool node_filters(node *n, struct filter *f){
                 switch (att->type) {
 
                     case integer:
-                        if(att->ifield==f->att->ifield){
+                        if (att->ifield == ref->att->ifield) {
                             b = false;
                         }
                         break;
                     case boolean:
-                        if(att->bfield==f->att->bfield){
+                        if (att->bfield == ref->att->bfield) {
                             b = false;
                         }
                         break;
                     case string:
-                        if(strcmp(att->sfield, f->att->sfield) == 0){
+                        if (strcmp(att->sfield, ref->att->sfield) == 0) {
                             b = false;
                         }
                         break;
                     case float_point:
-                        if(att->ffield==f->att->ffield){
+                        if (att->ffield == ref->att->ffield) {
                             b = false;
                         }
+                        break;
+                    case reference:
+                        break;
+                }
+                break;
+        }
+        free_node(ref);
+        return b;
+    }
+    while (f != NULL && b) {
+        attribute *att = n->att;
+        b = false;
+        while (att != NULL) {
+            if (!strcmp(att->name, f->att->name)) {
+                b = true;
+                break;
+            }
+            att = att->next;
+        }
+        if (!b) break;
+        if (att->type != f->att->type) {
+            b = false;
+            break;
+        }
+        switch (f->sel) {
+            case equals:
+                switch (att->type) {
+
+                    case integer:
+                        if (att->ifield != f->att->ifield) {
+                            b = false;
+                        }
+                        break;
+                    case boolean:
+                        if (att->bfield != f->att->bfield) {
+                            b = false;
+                        }
+                        break;
+                    case string:
+                        if (strcmp(att->sfield, f->att->sfield) != 0) {
+                            b = false;
+                        }
+                        break;
+                    case float_point:
+                        if (att->ffield != f->att->ffield) {
+                            b = false;
+                        }
+                        break;
+                    case reference:
+                        break;
+                }
+
+                break;
+            case bigger:
+                switch (att->type) {
+
+                    case integer:
+                        if (att->ifield <= f->att->ifield) {
+                            b = false;
+                        }
+                        break;
+                    case boolean:
+                        if (att->bfield <= f->att->bfield) {
+                            b = false;
+                        }
+                        break;
+                    case string:
+                        if (strcmp(att->sfield, f->att->sfield) >= 0) {
+                            b = false;
+                        }
+                        break;
+                    case float_point:
+                        if (att->ffield <= f->att->ffield) {
+                            b = false;
+                        }
+                        break;
+                    case reference:
+                        break;
+                }
+                break;
+            case bigger_eq:
+                switch (att->type) {
+
+                    case integer:
+                        if (att->ifield < f->att->ifield) {
+                            b = false;
+                        }
+                        break;
+                    case boolean:
+                        if (att->bfield < f->att->bfield) {
+                            b = false;
+                        }
+                        break;
+                    case string:
+                        if (strcmp(att->sfield, f->att->sfield) > 0) {
+                            b = false;
+                        }
+                        break;
+                    case float_point:
+                        if (att->ffield < f->att->ffield) {
+                            b = false;
+                        }
+                        break;
+                    case reference:
+                        break;
+                }
+                break;
+            case smaller:
+                switch (att->type) {
+
+                    case integer:
+                        if (att->ifield >= f->att->ifield) {
+                            b = false;
+                        }
+                        break;
+                    case boolean:
+                        if (att->bfield >= f->att->bfield) {
+                            b = false;
+                        }
+                        break;
+                    case string:
+                        if (strcmp(att->sfield, f->att->sfield) <= 0) {
+                            b = false;
+                        }
+                        break;
+                    case float_point:
+                        if (att->ffield >= f->att->ffield) {
+                            b = false;
+                        }
+                        break;
+                    case reference:
+                        break;
+                }
+                break;
+            case smaller_eq:
+                switch (att->type) {
+
+                    case integer:
+                        if (att->ifield > f->att->ifield) {
+                            b = false;
+                        }
+                        break;
+                    case boolean:
+                        if (att->bfield > f->att->bfield) {
+                            b = false;
+                        }
+                        break;
+                    case string:
+                        if (strcmp(att->sfield, f->att->sfield) < 0) {
+                            b = false;
+                        }
+                        break;
+                    case float_point:
+                        if (att->ffield > f->att->ffield) {
+                            b = false;
+                        }
+                        break;
+                    case reference:
+                        break;
+                }
+                break;
+            case not_equals:
+                switch (att->type) {
+
+                    case integer:
+                        if (att->ifield == f->att->ifield) {
+                            b = false;
+                        }
+                        break;
+                    case boolean:
+                        if (att->bfield == f->att->bfield) {
+                            b = false;
+                        }
+                        break;
+                    case string:
+                        if (strcmp(att->sfield, f->att->sfield) == 0) {
+                            b = false;
+                        }
+                        break;
+                    case float_point:
+                        if (att->ffield == f->att->ffield) {
+                            b = false;
+                        }
+                        break;
+                    case reference:
                         break;
                 }
                 break;
@@ -575,24 +770,26 @@ _Bool node_filters(node *n, struct filter *f){
     return b;
 }
 
-graph *find_filter_page(FILE *f, struct filter *filters){
+graph *find_filter_page(FILE *f, struct filter *filters) {
     if (fseek(f, 0, SEEK_SET)) {
         fprintf(stderr, "Error find filter page. Can't set point to start\n");
         return NULL;
     }
-    node *nodes = calloc(1, sizeof (node));
+    node *nodes = calloc(1, sizeof(node));
     int count = 0;
     char page[PAGE_SIZE];
     while (fread(page, sizeof(char), PAGE_SIZE, f)) {
         if (page[0] == start_node) {
+            int addr = ftell(f);
             node *n = page_to_node(page);
-            _Bool b = node_filters(n, filters);
+            _Bool b = node_filters(n, filters, f);
             if (b) {
-                nodes = realloc(nodes, (count + 2) * sizeof (node));
+                nodes = realloc(nodes, (count + 2) * sizeof(node));
                 nodes[count] = *n;
                 count++;
             }
             free(n);
+            fseek(f, addr, SEEK_SET);
         }
     }
     graph *graph = malloc(sizeof(*graph));
@@ -601,25 +798,25 @@ graph *find_filter_page(FILE *f, struct filter *filters){
     return graph;
 }
 
-graph *find_by_name_filter_page(FILE *f, char *name, struct filter *filters){
+graph *find_by_name_filter_page(FILE *f, char *name, struct filter *filters) {
     if (fseek(f, 0, SEEK_SET)) {
         fprintf(stderr, "Error find name filter page. Can't set point to start\n");
         return NULL;
     }
-    node *nodes = calloc(1, sizeof (node));
+    node *nodes = calloc(1, sizeof(node));
     int count = 0;
     char page[PAGE_SIZE];
     while (fread(page, sizeof(char), PAGE_SIZE, f)) {
         if (page[0] == start_node) {
             node *n = page_to_node(page);
             _Bool b;
-            if(!strcmp(n->name, name)){
-                b = node_filters(n, filters);
+            if (!strcmp(n->name, name)) {
+                b = node_filters(n, filters, f);
             } else {
                 b = false;
             }
             if (b) {
-                nodes = realloc(nodes, (count + 2) * sizeof (node));
+                nodes = realloc(nodes, (count + 2) * sizeof(node));
                 nodes[count] = *n;
                 count++;
             }
@@ -632,18 +829,18 @@ graph *find_by_name_filter_page(FILE *f, char *name, struct filter *filters){
     return graph;
 }
 
-graph *find_edge_page(FILE *f, char *name, long int id){
+graph *find_edge_page(FILE *f, char *name, long int id) {
     node *n = get_node_page(f, id);
-    node *nodes = calloc(1, sizeof (node));
+    node *nodes = calloc(1, sizeof(node));
     int count = 0;
     char page[PAGE_SIZE];
     edge *e = n->edges;
-    while(e!=NULL){
-        if(!strcmp(e->name, name)){
-            fseek(f, (e->id)*PAGE_SIZE, SEEK_SET);
+    while (e != NULL) {
+        if (!strcmp(e->name, name)) {
+            fseek(f, (e->id) * PAGE_SIZE, SEEK_SET);
             fread(page, sizeof(char), PAGE_SIZE, f);
             node *pn = page_to_node(page);
-            nodes = realloc(nodes, (count + 2) * sizeof (node));
+            nodes = realloc(nodes, (count + 2) * sizeof(node));
             nodes[count] = *pn;
             count++;
         }

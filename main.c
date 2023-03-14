@@ -4,5 +4,6 @@
 
 int main() {
     selectors_test();
+    performance_test();
     return 0;
 }

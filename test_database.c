@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "test_database.h"
 
 #define INTERACTION 100
@@ -128,6 +129,18 @@ void edge_test(FILE *f){
     free_graph(g);
 }
 
+void ref_test(FILE *f){
+    struct reference ref;
+    ref.ref_id = 0;
+    ref.name = "name";
+    attribute *att = create_attribute("name", reference, &ref, NULL);
+    struct filter *filter = create_filter(equals, att, NULL);
+    graph *g = find_filter(f, filter);
+    free_graph(g);
+    free_attribute(att);
+    free_filter(filter);
+}
+
 void performance_test() {
     FILE *f = fopen("performance_test", "w");
     fclose(f);
@@ -137,6 +150,7 @@ void performance_test() {
     FILE *delete = fopen("delete_stat", "w");
     FILE *find = fopen("find_stat", "w");
     FILE *edge = fopen("edge_stat", "w");
+    FILE *ref = fopen("ref_stat", "w");
     for (int i = 0; i < INTERACTION; i++) {
         clock_t begin = clock();
         init_selectors_test(f);
@@ -161,6 +175,12 @@ void performance_test() {
         end = clock();
         time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
         fprintf(edge, "%lf\n", time_spent);
+
+        begin = clock();
+        ref_test(f);
+        end = clock();
+        time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
+        fprintf(ref, "%lf\n", time_spent);
 
         init_selectors_test(f);
         begin = clock();
