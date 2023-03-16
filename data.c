@@ -28,9 +28,6 @@ attribute *create_attribute(char *name, enum type type, void *p, attribute *next
         case boolean:
             attribute->bfield = *(_Bool *) p;
             break;
-        case reference:
-            attribute->ref_field = (ref *)p;
-            break;
         default:
             attribute->sfield = NULL;
     }

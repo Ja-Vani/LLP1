@@ -7,8 +7,7 @@ enum type {
     integer = (char) 1,
     boolean = (char) 4,
     string = (char) 3,
-    float_point = (char) 2,
-    reference = (char) 5
+    float_point = (char) 2
 };
 
 typedef struct edge {
@@ -19,11 +18,6 @@ typedef struct edge {
 
 typedef struct node node;
 
-typedef struct reference{
-    long int ref_id;
-    char *name;
-} ref;
-
 typedef struct attribute {
     char *name;
     enum type type;
@@ -32,7 +26,6 @@ typedef struct attribute {
         int ifield;
         float ffield;
         _Bool bfield;
-        ref *ref_field;
     };
     struct attribute *next;
 } attribute;
@@ -55,7 +48,8 @@ enum selector{
     bigger_eq = 2,
     smaller = 3,
     smaller_eq = 4,
-    not_equals = 5
+    not_equals = 5,
+    reference = 6
 };
 
 struct filter{

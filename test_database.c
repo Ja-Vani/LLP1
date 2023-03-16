@@ -130,11 +130,8 @@ void edge_test(FILE *f){
 }
 
 void ref_test(FILE *f){
-    struct reference ref;
-    ref.ref_id = 0;
-    ref.name = "name";
-    attribute *att = create_attribute("name", reference, &ref, NULL);
-    struct filter *filter = create_filter(equals, att, NULL);
+    attribute *att = create_attribute("name", string, "name", NULL);
+    struct filter *filter = create_filter(reference, att, NULL);
     graph *g = find_filter(f, filter);
     free_graph(g);
     free_attribute(att);
